@@ -5,18 +5,10 @@ from json import dumps
 from kafka import KafkaProducer
 from _thread import *
 import json 
-
 import sys
 import datetime
-
 import time
 import collections
-
-from time import sleep
-from json import dumps
-from kafka import KafkaProducer
-from kafka import KafkaConsumer
-from json import loads
 import threading
 
 topic_num = 0
@@ -29,7 +21,7 @@ def select_server(msgid):
     return msgid%servercount
 
 def check_typeof_receiver(message):
-    recv = message.split("_")[1]
+    recv = message.split("_")[2]
     f = open('group.txt','r')
     lines= f.readlines()
     for line in lines:
@@ -38,6 +30,50 @@ def check_typeof_receiver(message):
     r_list = []
     r_list.append(recv)
     return r_list
+
+def fun_send(message,dict_serverid):
+    global msgid,producer
+    recv_dict = message.split("_")
+    receiver_list = check_typeof_receiver(message)
+    cur_server = select_server(msgid)
+    print("server# : ",cur_server)
+    recv_str = '_'.join(receiver_list)
+    print("recv_str ",recv_str)
+
+    timestamp=str(datetime.datetime.now())
+    format_of_msg_server = str(msgid)+"_"+message +"_"+timestamp +"_/_"+recv_str
+
+    dict_ack = {}
+    dict_ack['uid1'] = recv_dict[1]
+    dict_ack['uid2'] = recv_dict[2]
+    dict_ack['timestamp'] = timestamp
+    dict_ack['msgid'] = msgid
+
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
+    producer.send(recv_dict[1], value=dict_ack)    
+    msgid += 1
+
+def fun_delete(message,dict_serverid):
+    global msgid,producer
+    cur_server = select_server(msgid)
+
+    format_of_msg_server = str(message[-1])+"_"+message[0]+"_"+message[2]+"_"+message[3]+"_"+message[1]
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
+
+def fun_fetch_msg(message,dict_serverid):
+    global msgid,producer
+    cur_server = select_server(msgid)
+    print(message)
+    format_of_msg_server = str(message[1])+"_"+message[0]+"_"+message[2]+"_"+message[3]
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
+
+def fun_update(message,dict_serverid):
+    global msgid,producer
+    cur_server = select_server(msgid)
+    timestamp=str(datetime.datetime.now())
+    format_of_msg_server = (message[1])+"_"+message[0]+"_"+message[2]+"_"+message[3]+"_"+str(message[4])+"_"+message[5]+"_"+timestamp
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)  
+
 
 def consumer_t(topic):
     
@@ -49,21 +85,41 @@ def consumer_t(topic):
      value_deserializer=lambda x: loads(x.decode('utf-8')))
 
     recv = "Yash"
-    dict_serverid = {0:"server0"}
+    dict_serverid = {0:"server0",1:"server1"}
 
-    for message in consumer:
-        message = message.value
-        print(message)
-        receiver_list = check_typeof_receiver(message)
-        cur_server = select_server(msgid)
-        print("server# : ",cur_server)
+    for msg in consumer:
+        recv_dict = msg.value
+        print("recv ",(recv_dict))
+        # continue
+        if(recv_dict['op_type']=='send'):
+            # recv_dict.pop('op_type')
+            message='_'.join(recv_dict.values())
+            print(message)
+            fun_send(message,dict_serverid)
 
-        
-        recv_str = '_'.join(receiver_list)
-        print(recv_str)
-        format_of_msg_server = str(msgid)+"_"+message + "_/_"+recv_str
-        producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
-        msgid += 1    
+        elif(recv_dict['op_type']=='fetchmsg'):
+            message=list(recv_dict.values())
+            fun_fetch_msg(message,dict_serverid)
+            print()
+
+        elif(recv_dict['op_type']=='delete'):
+            message=list(recv_dict.values())
+            fun_delete(message,dict_serverid)
+            print()
+
+        elif(recv_dict['op_type']=='update'):
+            message=list(recv_dict.values())
+            print('update: ',message)
+            fun_update(message,dict_serverid)
+            
+        elif(recv_dict['op_type']=='fetch_grp'):
+            # recv_dict.pop('op_type')
+            print()
+        elif(recv_dict['op_type']=='fetch_user'):
+            # recv_dict.pop('op_type')
+            print()
+
+
             
 user_id=""
 producer = KafkaProducer(bootstrap_servers=['localhost:9092'],value_serializer=lambda x: dumps(x).encode('utf-8'))

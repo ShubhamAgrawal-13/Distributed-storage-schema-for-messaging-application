@@ -4,22 +4,14 @@ from time import sleep
 from json import dumps
 from kafka import KafkaProducer
 from _thread import *
-import json 
-# import schedule 
+import json
 import sys
 import datetime
-
 import time
 import collections
-
-from time import sleep
-from json import dumps
-from kafka import KafkaProducer
-from kafka import KafkaConsumer
-from json import loads
 import threading
-
 import pymongo
+
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb1 = myclient["GlobalDB1"]
 mydb2 = myclient["GlobalDB2"]
@@ -42,19 +34,68 @@ def check_typeof_receiver(message):
 
 def update_database(templist,flg):
     table_name=""
+    print("templist  ",templist)
     if flg==1:
-        table_name = str(templist[1])+"_"+str(templist[2])
+        table_name = str(templist[2])+"_"+str(templist[3])
     else:
-        table_name=str(templist[2])
+        table_name=str(templist[3])
+
+    Timestamp = templist[-1]
+    print(Timestamp, " time")
     mycol1 = mydb1[table_name]
     mycol2 = mydb2[table_name]
     mycol3 = mydb3[table_name]
 
-    mydict = { "Msg ID": templist[0], "Sender ID": templist[1], "Text": templist[2],"Timestamp":datetime.datetime.now()}
+    mydict = { "Msg ID": templist[0], "Sender ID": templist[2], "Text": templist[4],"Timestamp":Timestamp}
 
     x1 = mycol1.insert_one(mydict)
     x2 = mycol2.insert_one(mydict)
-    x3 = mycol3.insert_one(mydict) 
+    x3 = mycol3.insert_one(mydict)
+
+def fun_delete(table_name,msgid):
+    mycol1 = mydb1[table_name]
+    mycol2 = mydb2[table_name]
+    mycol3 = mydb3[table_name]
+    myquery = { "Msg ID": msgid }
+
+    mydoc1 = mycol1.find(myquery)
+    for x in mydoc1:
+      mycol1.delete_one(x)
+
+    mydoc2 = mycol2.find(myquery)
+    for x in mydoc2:
+      mycol2.delete_one(x)
+
+    mydoc3 = mycol3.find(myquery)
+    for x in mydoc3:
+      mycol3.delete_one(x)
+    print("Deleted.... ")
+
+def fun_fetch_msg(userid, tablename):
+    global producer
+    mycol1 = mydb1[tablename]
+    for x in mycol1.find({}, {"_id":0, "Msg ID": 1, "Sender ID": 1,"Text": 1,"Timestamp": 1 }): 
+        print(x)
+        producer.send(userid, value=x)    
+
+def fun_update(table_name,msgid,new_msg):
+	mycol1 = mydb1[table_name]
+	mycol2 = mydb2[table_name]
+	mycol3 = mydb3[table_name]
+	myquery = { "Msg ID": str(msgid) }
+	print("msgid:: ",(msgid))
+	print("new_msg:: ",new_msg)
+	newvalues = { "$set": { "Text": new_msg } }
+
+	mycol1.update_many(myquery, newvalues)
+	mycol2.update_many(myquery, newvalues)
+	mycol3.update_many(myquery, newvalues)
+
+	myquery = { "Msg ID": msgid }
+
+	mydoc1 = mycol1.find({},{"_id":0, "Msg ID": 1, "Sender ID": 1,"Text": 1,"Timestamp": 1 })
+	for x in mydoc1:
+		print("entry  ",x)
 
 def consumer_t(topic):
     
@@ -68,29 +109,69 @@ def consumer_t(topic):
     for message in consumer:
         message = message.value
         print("loop ",message)
-        receiver_type = check_typeof_receiver(message)
-        print(" receiver_type ",receiver_type)
-        if(receiver_type=="group"):
-            print("its grp")
-            recv = message.split("_/_")[1].split("_")
-            print("if grp ",recv)
-            update_database(message.split("_/_")[0].split("_"),0)
-            format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-            for recvr in recv:
-                    # pass
-                    producer.send(recvr.split('\n')[0], value=format_of_msg_server)
+        op_type = message.split("_")[1]
+        if(op_type=='send'):
+            receiver_type = check_typeof_receiver(message)
+            print(" receiver_type ",receiver_type)
+            if(receiver_type=="group"):
+                print("its grp")
+                recv = message.split("_/_")[1].split("_")
+                print("if grp ",recv)
+                update_database(message.split("_/_")[0].split("_"),0)
+                format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
+                for recvr in recv:
+                        producer.send(recvr.split('\n')[0], value=format_of_msg_server)
 
-        else:
-            print("nothing")
-            recv = message.split("_/_")[1].split("_")
-            print("if not ",recv)
-            update_database(message.split("_/_")[0].split("_"),1)
-            format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-            for recvr in recv:
-                # pass
-                    # format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-                producer.send(recvr, value=format_of_msg_server)
+            else:
+                print("nothing")
+                recv = message.split("_/_")[1].split("_")
+                print("if not ",recv)
+                update_database(message.split("_/_")[0].split("_"),1)
+                format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
+                for recvr in recv:
+                    producer.send(recvr, value=format_of_msg_server)
+
+        elif(op_type=="fetchmsg"):
+            # fun_fetchmsg(message)
+            recv_msg = message.split("_")
+            tablename = ""
+            print(recv_msg)
+            if(recv_msg[0]=="false"):
+                tablename = recv_msg[2]+"_"+recv_msg[3]
+            else:
+                tablename = recv_msg[3]
+            print(tablename, recv_msg[2])
+            fun_fetch_msg(recv_msg[2],tablename)
+    
             
+        elif(op_type=='delete'):
+            
+            recv_msg = message.split("_")
+            tablename = ""
+            print(recv_msg)
+            if(recv_msg[-1]=="false"):
+                tablename = recv_msg[2]+"_"+recv_msg[3]
+            else:
+                tablename = recv_msg[3]
+            print(tablename)
+            msgid = recv_msg[0]
+            fun_delete(tablename,msgid)
+            
+        elif(op_type=='update'):
+        	recv_msg = message.split("_")
+        	tablename = ""
+        	print("update:  ",recv_msg)
+        	if(recv_msg[0]=="false"):
+        		tablename = recv_msg[2]+"_"+recv_msg[3]
+        	else:
+        		tablename = recv_msg[3]
+
+        	print(tablename)
+        	msgid = recv_msg[4]
+        	new_msg = recv_msg[5]
+        	fun_update(tablename, msgid ,new_msg)
+
+                        
     
             
 user_id=""

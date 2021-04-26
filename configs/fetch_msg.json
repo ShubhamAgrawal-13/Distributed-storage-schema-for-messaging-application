@@ -1,7 +1,8 @@
 {
-	"uid":"user1",
+	"op_type":"delete",
+	"uid1":"user1",
+	"uid2":"group1",
 	"isGroup":"true",
-	"uid2":"group1"
 }
 
 

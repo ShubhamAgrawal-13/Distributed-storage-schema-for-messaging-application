@@ -71,6 +71,9 @@ while(1):
         recv = input("Receiver?  ")
         data = "Hi Yash"
         topic1 = "loadbalancer"
-        data=user_id+"_"+recv+"_"+data
-        producer.send(topic1, value=data)
-        sleep(1)
+        dict_send={'op_type':"send",'uid1':user_id,'uid2':recv,'msg':data}
+        producer.send(topic1, value=dict_send)
+        new_msg = "Update yash"
+        dict_send2={'op_type':"update",'is_Group':"True",'uid1':user_id,'uid2':recv, 'msgid':1, 'data':new_msg}
+        producer.send(topic1, value=dict_send2)
+        # sleep(1)
