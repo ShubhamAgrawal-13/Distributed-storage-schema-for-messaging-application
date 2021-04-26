@@ -2,7 +2,6 @@
 <html>
 <head>
 	<title>Dashboard</title>
-	<meta http-equiv="refresh" content="30" />
 	<style type="text/css">
 		body, html {
 		  width: 100%;
@@ -151,7 +150,7 @@
 	    				<h1 style="margin-left: 20px;"> Dashboard <b><i>{{uid}}</i></b> </h1>
 	    			</td>
 	    			<td style="text-align:center">
-	    				<form action="{{ url_for('logout', user_id = uid) }}" method="POST">
+	    				<form action="/logout/" method="POST">
 						    <button class="logout">Logout</button>
 						</form>
 	    			</td>
@@ -163,13 +162,13 @@
 	    	<table border="1px" width="100%">
 	    		<tr>
 	    			<td style="text-align:center">
-	    				<form action="{{ url_for('fetch_users', user_id = uid) }}" method="POST">
+	    				<form action="/fetch_users/" method="POST">
 						    <button style="width:100%;margin-top: 10px;"><h3>Fetch Users</h3></button>
 						</form>
 						<div id="bottom" class="vertical-menu" style="width:100%">
 							<!-- <a href="#">link</a> -->
 						    {% for user in users %}
-								<a href="{{ url_for('update_cid', user_id = uid, chat_id = user) }}" >{{user}}</a>
+								<a href="{{ url_for('update_cid', chat_id = user) }}" >{{user}}</a>
 								<!-- <a href="#">{{user}}</a> -->
 							{% endfor %}
 						</div>
@@ -177,13 +176,13 @@
 	    		</tr>
 	    		<tr>
 	    			<td style="text-align:center">
-	    				<form action="{{ url_for('fetch_groups', user_id = uid) }}" method="POST">
+	    				<form action="/fetch_groups/" method="POST">
 						    <button style="width:100%;margin-top: 10px;"><h3>Fetch Groups</h3></button>
 						</form>
 						<div class="vertical-menu" style="width:100%">
 							<!-- <a href="#">link</a> -->
 						    {% for group in groups %}
-								<a href="{{ url_for('update_cid', user_id = uid, chat_id = group) }}" >{{group}}</a>
+								<a href="{{ url_for('update_cid',chat_id = group) }}" >{{group}}</a>
 								<!-- <a href="#">{{group}}</a> -->
 							{% endfor %}
 						</div>
@@ -206,13 +205,13 @@
 			    		<table width="100%">
 			    			<tr>
 			    				<td width="50%">
-			    					<a href="#">{{msgs[msg]['text']}}</a>
+			    					<a href="#">{{msg}}</a>
 			    				</td>
 			    				<td width="10%">
-			    					<label>{{msgs[msg]['uid']}}</label>
+			    					<label>User</label>
 			    				</td>
 			    				<td width="10%">
-			    					<label>{{msgs[msg]['time_stamp']}}</label>
+			    					<label>Time</label>
 			    				</td>
 			    				<td width="15%" style="text-align:center">
 			    					<form action="/fetch_msgs/" method="POST">
@@ -244,14 +243,14 @@
 	    	<table border="1px" style="width:100%;">
 	    		<tr>
 	    			<td>
-	    	<form action="{{ url_for('send', user_id = uid) }}" method="POST">
+	    	<form action="/fetch_msgs/" method="POST">
 	    		<table width="100%">
 		    		<tr>
 		    			<td>
 		    				<input type="text" name="typed_msg" id="typed_msg" placeholder="Type a message..."/>
 		    			</td>
 		    			<td style="text-align:center">
-							<button class="btn">Send</button>
+							<button type="submit" class="btn">Send</button>
 		    			</td>
 		    		</tr>
 		    	</table>

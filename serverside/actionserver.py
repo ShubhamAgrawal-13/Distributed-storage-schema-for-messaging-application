@@ -120,7 +120,7 @@ def consumer_t(topic):
                 update_database(message.split("_/_")[0].split("_"),0)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
                 for recvr in recv:
-                        producer.send(recvr.split('\n')[0], value=format_of_msg_server)
+                    producer.send(recvr.split('\n')[0], value=format_of_msg_server)
 
             else:
                 print("nothing")
@@ -128,8 +128,17 @@ def consumer_t(topic):
                 print("if not ",recv)
                 update_database(message.split("_/_")[0].split("_"),1)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
+                print(format_of_msg_server)
                 for recvr in recv:
-                    producer.send(recvr, value=format_of_msg_server)
+                    dict_ack = {}
+                    dict_ack['ack'] = '0'
+                    dict_ack['uid1'] = message.split("_/_")[0].split("_")[2]
+                    dict_ack['uid2'] = recvr
+                    dict_ack['timestamp'] = "timestamp"
+                    dict_ack['msgid'] = 1234
+                    dict_ack['text'] = message
+                    producer.send(recvr, value=dict_ack)
+                    # producer.send(recvr, value=format_of_msg_server)
 
         elif(op_type=="fetchmsg"):
             # fun_fetchmsg(message)

@@ -44,10 +44,12 @@ def fun_send(message,dict_serverid):
     format_of_msg_server = str(msgid)+"_"+message +"_"+timestamp +"_/_"+recv_str
 
     dict_ack = {}
+    dict_ack['ack'] = '1'
     dict_ack['uid1'] = recv_dict[1]
     dict_ack['uid2'] = recv_dict[2]
     dict_ack['timestamp'] = timestamp
     dict_ack['msgid'] = msgid
+    dict_ack['text'] = message
 
     producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
     producer.send(recv_dict[1], value=dict_ack)    
@@ -141,3 +143,5 @@ while(1):
         data=user_id+"_"+recv+"_"+data
         producer.send(recv, value=data)
         sleep(1)
+
+
