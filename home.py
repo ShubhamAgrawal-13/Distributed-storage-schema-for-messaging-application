@@ -15,9 +15,10 @@ app.secret_key = 'any random string'
 
 users = 0
 users_data = {}
+user_threads = {}
 
 def user_handle(user_id):
-	global users_data
+	global users_data, user_threads
 	consumer = KafkaConsumer(user_id,
 	     bootstrap_servers=['localhost:9092'],
 	     auto_offset_reset='latest',
@@ -25,26 +26,40 @@ def user_handle(user_id):
 	     value_deserializer=lambda x: loads(x.decode('utf-8')))
 	print("[", user_id,"]: ", "started")
 	for msg in consumer:
-		recv_dict = msg.value
-		print("[", user_id,"]: ", recv_dict)
-		msg_id = recv_dict['msgid']
-		uid1 = recv_dict['uid1']
-		uid2 = recv_dict['uid2']
-		print("[", user_id,"]: ", recv_dict['ack'])
-		if(recv_dict['ack'] == '1'):
-			if uid2 not in users_data[user_id]['msg_list']:
-				users_data[user_id]['msg_list'][uid2] = {}
-			users_data[user_id]['msg_list'][uid2][msg_id] = {}
-			users_data[user_id]['msg_list'][uid2][msg_id]['uid'] = uid1
-			users_data[user_id]['msg_list'][uid2][msg_id]['time_stamp'] = recv_dict['timestamp']
-			users_data[user_id]['msg_list'][uid2][msg_id]['text'] = recv_dict['text']
+		if user_id in user_threads:
+			print("[", user_id,"]: ","entered")
+			recv_dict = msg.value
+			print("[", user_id,"]: ", recv_dict)
+			print("[", user_id,"]: ", recv_dict['ack'])
+
+			if(recv_dict['ack'] == '2'):
+				users_data[user_id]['user_list'] = recv_dict['users']
+			elif(recv_dict['ack'] == '3'):
+				pass
+			elif(recv_dict['ack'] == '1'):
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				if uid2 not in users_data[user_id]['msg_list']:
+					users_data[user_id]['msg_list'][uid2] = {}
+				users_data[user_id]['msg_list'][uid2][msg_id] = {}
+				users_data[user_id]['msg_list'][uid2][msg_id]['uid'] = uid1
+				users_data[user_id]['msg_list'][uid2][msg_id]['time_stamp'] = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid2][msg_id]['text'] = recv_dict['text']
+			elif (recv_dict['ack'] == '2'):
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				if uid1 not in users_data[user_id]['msg_list']:
+					users_data[user_id]['msg_list'][uid1] = {}
+				users_data[user_id]['msg_list'][uid1][msg_id] = {}
+				users_data[user_id]['msg_list'][uid1][msg_id]['uid'] = uid1
+				users_data[user_id]['msg_list'][uid1][msg_id]['time_stamp'] = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid1][msg_id]['text'] = recv_dict['text']
+
 		else:
-			if uid1 not in users_data[user_id]['msg_list']:
-				users_data[user_id]['msg_list'][uid1] = {}
-			users_data[user_id]['msg_list'][uid1][msg_id] = {}
-			users_data[user_id]['msg_list'][uid1][msg_id]['uid'] = uid1
-			users_data[user_id]['msg_list'][uid1][msg_id]['time_stamp'] = recv_dict['timestamp']
-			users_data[user_id]['msg_list'][uid1][msg_id]['text'] = recv_dict['text']
+			break
+	print("[", user_id,"]: ", "stopped")
 		    
 
 
@@ -60,7 +75,7 @@ def login():
 
 @app.route("/login_check",methods=["GET","POST"])
 def login_check():
-	global producer, users, users_data
+	global producer, users, users_data, user_threads
 	if request.method=="POST":
 		req=request.form
 		req=dict(req)
@@ -87,24 +102,28 @@ def login_check():
 			message = message.value
 			print(message)
 			break
-		users += 1 
-		users_data[uid] = {}
-		users_data[uid]['cid']=None
-		users_data[uid]['user_list']=[]
-		users_data[uid]['group_list']=[]
-		users_data[uid]['msg_list']={}
-		t1 = threading.Thread(target=user_handle, args=(uid,))
-		t1.start()
-		return (redirect("/dashboard/" + str(uid)))
+		if(message['ack']==1):
+			users += 1 
+			users_data[uid] = {}
+			users_data[uid]['cid']=None
+			users_data[uid]['user_list']=[]
+			users_data[uid]['group_list']=[]
+			users_data[uid]['msg_list']={}
+			t1 = threading.Thread(target=user_handle, args=(uid,))
+			user_threads[uid]=True
+			t1.start()
+			return (redirect("/dashboard/" + str(uid)))
+		else:
+			return (redirect("/invalid"))
 	return (redirect("/login"))
 
 @app.route("/register",methods=["GET","POST"])
 def register():
 	return render_template("register.html")
 
-@app.route("/login_check",methods=["GET","POST"])
+@app.route("/register_check",methods=["GET","POST"])
 def register_check():
-	global producer, users, users_data
+	global producer, users, users_data, user_threads
 	if request.method=="POST":
 		req=request.form
 		req=dict(req)
@@ -139,6 +158,7 @@ def register_check():
 		users_data[uid]['group_list']=[]
 		users_data[uid]['msg_list']={}
 		t1 = threading.Thread(target=user_handle, args=(uid,))
+		user_threads[uid]=True
 		t1.start()
 		return (redirect("/dashboard/" + str(uid)))
 	return (redirect("/register"))
@@ -160,9 +180,11 @@ def dashboard(user_id):
 
 @app.route("/logout/<string:user_id>",methods=["POST"])
 def logout(user_id):
-	global users_data, users
+	global users_data, users, user_threads, producer
 	users -= 1
 	users_data.pop(user_id)
+	user_threads.pop(user_id)
+	producer.send(user_id, json.dumps({}).encode('utf-8'))
 	return (redirect("/"))
 
 
@@ -170,12 +192,17 @@ def logout(user_id):
 def fetch_users(user_id):
 	global producer, users, users_data
 	print('fetch users')
-	file = open('mappings/user.txt', 'r')
-	data = file.read().splitlines()
-	file.close()
+	# file = open('mappings/user.txt', 'r')
+	# data = file.read().splitlines()
+	# file.close()
 	# print(data)
 	# print(users_data)
-	users_data[user_id]['user_list'] = data
+	# users_data[user_id]['user_list'] = data
+	dict_send = {
+		"uid":user_id
+	}
+	producer.send("fetch_users", json.dumps(dict_send).encode('utf-8'))
+	sleep(1)
 	return (redirect("/dashboard/" + str(user_id)))
 
 
@@ -217,8 +244,11 @@ def send(user_id):
 		topic1 = "loadbalancer"
 		dict_send={'op_type':"send",'uid1':user_id,'uid2':chat_id,'msg':req['typed_msg']}
 		producer.send(topic1, json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
 
 	return (redirect("/dashboard/" + str(user_id)))
+
+
 
 
 
