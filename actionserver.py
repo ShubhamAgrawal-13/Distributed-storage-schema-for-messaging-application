@@ -44,7 +44,7 @@ def update_database(templist,flg):
         table_name=str(templist[3])
 
     Timestamp = templist[-1]
-    print(Timestamp, " time")
+    # print(Timestamp, " time")
     mycol1 = mydb1[table_name]
     mycol2 = mydb2[table_name]
     mycol3 = mydb3[table_name]
@@ -88,7 +88,7 @@ def fun_fetch_msg(userid, tablename):
     dict_ack2['uid2'] = uid2
     dict_ack2['msgs'] = []
     for x in mycol1.find({}, {"_id":0, "Msg ID": 1, "Sender ID": 1,"Text": 1,"Timestamp": 1 }): 
-        print(x)
+        # print(x)
         dict_ack = {}
         dict_ack['msgid'] = x["Msg ID"]
         dict_ack['uid1'] = userid
@@ -96,7 +96,7 @@ def fun_fetch_msg(userid, tablename):
         dict_ack['text'] = x["Text"]
         dict_ack['timestamp'] = x["Timestamp"]
         dict_ack2['msgs'].append(dict_ack)
-    print(dict_ack2)
+    # print(dict_ack2)
     producer.send(userid, value=dict_ack2)
 
 def fun_update(table_name,msgid,new_msg):
@@ -104,8 +104,8 @@ def fun_update(table_name,msgid,new_msg):
 	mycol2 = mydb2[table_name]
 	mycol3 = mydb3[table_name]
 	myquery = { "Msg ID": str(msgid) }
-	print("msgid:: ",(msgid))
-	print("new_msg:: ",new_msg)
+	# print("msgid:: ",(msgid))
+	# print("new_msg:: ",new_msg)
 	newvalues = { "$set": { "Text": new_msg } }
 
 	mycol1.update_many(myquery, newvalues)
@@ -115,8 +115,8 @@ def fun_update(table_name,msgid,new_msg):
 	myquery = { "Msg ID": msgid }
 
 	mydoc1 = mycol1.find({},{"_id":0, "Msg ID": 1, "Sender ID": 1,"Text": 1,"Timestamp": 1 })
-	for x in mydoc1:
-		print("entry  ",x)
+	# for x in mydoc1:
+	# 	print("entry  ",x)
 
 def consumer_t(topic):
     
@@ -129,15 +129,16 @@ def consumer_t(topic):
 
     for message in consumer:
         message = message.value
-        print("loop ",message)
+        # print("loop ",message)
         op_type = message.split("_")[1]
         if(op_type=='send'): #broadcast
             receiver_type = check_typeof_receiver(message)
-            print(" receiver_type ",receiver_type)
+            print("[Send query]:", message)
+            # print(" receiver_type ",receiver_type)
             if(receiver_type=="group"):
-                print("its grp")
+                # print("its grp")
                 recv = message.split("_/_")[1].split("_")
-                print("if grp ",recv)
+                # print("if grp ",recv)
                 update_database(message.split("_/_")[0].split("_"),0)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
                 for recvr in recv:
@@ -148,16 +149,16 @@ def consumer_t(topic):
                     dict_ack['timestamp'] = message.split("_/_")[0].split("_")[-1]
                     dict_ack['msgid'] = message.split("_/_")[0].split("_")[0]
                     dict_ack['text'] = message.split("_/_")[0].split("_")[-2]
-                    print(recvr, dict_ack)
+                    # print(recvr, dict_ack)
                     producer.send(recvr.split('\n')[0], value=dict_ack)
 
             else:
-                print("nothing")
+                # print("nothing")
                 recv = message.split("_/_")[1].split("_")
-                print("if not ",recv)
+                # print("if not ",recv)
                 update_database(message.split("_/_")[0].split("_"),1)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-                print(format_of_msg_server)
+                # print(format_of_msg_server)
                 for recvr in recv:
                     dict_ack = {}
                     dict_ack['ack'] = '0'
@@ -171,11 +172,12 @@ def consumer_t(topic):
 
         elif(op_type=="send2"):
             receiver_type = check_typeof_receiver(message)
-            print(" receiver_type send2",receiver_type, message)
+            # print(" receiver_type send2",receiver_type, message)
+            print("Update - send2")
             if(receiver_type=="group"):
-                print("its grp")
+                # print("its grp")
                 recv = message.split("_/_")[1].split("_")
-                print("if grp ",recv)
+                # print("if grp ",recv)
                 # update_database(message.split("_/_")[0].split("_"),0)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
                 for recvr in recv:
@@ -189,12 +191,12 @@ def consumer_t(topic):
                     producer.send(recvr.split('\n')[0], value=dict_ack)
 
             else:
-                print("nothing")
+                # print("nothing")
                 recv = message.split("_/_")[1].split("_")
-                print("if not ",recv)
+                # print("if not ",recv)
                 # update_database(message.split("_/_")[0].split("_"),1)
                 format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-                print(format_of_msg_server)
+                # print(format_of_msg_server)
                 for recvr in recv:
                     dict_ack = {}
                     dict_ack['ack'] = '5'
@@ -207,12 +209,12 @@ def consumer_t(topic):
                     # producer.send(recvr, value=format_of_msg_server)
     
         if(op_type=='send3'): #group
-            print("send3")
+            print("Group - send3", message)
             recv = message.split("_/_")[1].split("_")
-            print("if grp ",recv)
+            # print("if grp ",recv)
             update_database(message.split("_/_")[0].split("_"),0)
             format_of_msg_server = " ".join(message.split("_/_")[0].split("_"))
-            print("message", message)
+            # print("message", message)
             for recvr in recv:
                 dict_ack = {}
                 dict_ack['ack'] = '9'
@@ -221,7 +223,7 @@ def consumer_t(topic):
                 dict_ack['timestamp'] = message.split("_/_")[0].split("_")[-1]
                 dict_ack['msgid'] = message.split("_/_")[0].split("_")[0]
                 dict_ack['text'] = message.split("_/_")[0].split("_")[-2]
-                print(recvr, dict_ack)
+                # print(recvr, dict_ack)
                 producer.send(recvr.split('\n')[0], value=dict_ack)
 
 
@@ -232,7 +234,7 @@ def consumer_t(topic):
             recv_msg = message.split("_")
             tablename = ""
             print("fetchmsg: ", recv_msg)
-            print(recv_msg)
+            # print(recv_msg)
             if(recv_msg[0]=="false"):
                 list_1 = [recv_msg[2], recv_msg[3]]
                 list_1.sort()
@@ -240,8 +242,8 @@ def consumer_t(topic):
                 # tablename = recv_msg[2]+"_"+recv_msg[3]
             else:
                 tablename = recv_msg[3]
-            print("tablename : ", tablename)
-            print(tablename, recv_msg[2])
+            # print("tablename : ", tablename)
+            # print(tablename, recv_msg[2])
             fun_fetch_msg(recv_msg[2],tablename)
     
             
@@ -249,14 +251,14 @@ def consumer_t(topic):
             
             recv_msg = message.split("_")
             tablename = ""
-            print(recv_msg)
+            print("delete: ", recv_msg)
             if(recv_msg[-1]=="false"):
                 list_1 = [recv_msg[2], recv_msg[3]]
                 list_1.sort()
                 tablename = str(list_1[0])+"_"+str(list_1[1])
             else:
                 tablename = recv_msg[3]
-            print(tablename)
+            # print(tablename)
             msgid = recv_msg[0]
             fun_delete(tablename,msgid)
 
@@ -271,7 +273,7 @@ def consumer_t(topic):
                 tablename = str(list_1[0])+"_"+str(list_1[1])
             else:
                 tablename = recv_msg[3]
-            print(tablename)
+            # print(tablename)
             msgid = recv_msg[4]
             fun_update(tablename,msgid, recv_msg[5])
 

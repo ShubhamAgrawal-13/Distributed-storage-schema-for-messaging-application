@@ -34,14 +34,15 @@ def login_authenticate():
 		query = user_table.find({"user_id": message['uid']})
 		flag = 0
 		for x in query:
-			print("[query : ]", x)
+			# print("[query : ]", x)
 			if(x["password"]  == message["password"]):
 				flag=1
 			else:
 				flag=0
 			break
 
-		print("[message : ]", message)
+		# print("[message : ]", message)
+		print("Login: ", message)
 		res = {
 			"uid":message['uid'],
 			"ack":flag
@@ -71,8 +72,8 @@ def register_user():
 				 }
 
 		x1 = user_table.insert_one(reg_dict)
-		print(x1)
-		print(message)
+		# print(x1)
+		print("Register: ", message)
 		res = {
 			"uid":message['uid'],
 			"ack":"ok"
@@ -84,6 +85,7 @@ def register_user():
 
 def fetch_users():
 	topic_register = "fetch_users"
+	print("[fetch_users]")
 	consumer = KafkaConsumer(topic_register,
      bootstrap_servers=['localhost:9092'],
      auto_offset_reset='latest',
@@ -93,15 +95,15 @@ def fetch_users():
      value_deserializer=lambda x: loads(x.decode('utf-8')))
 	for message in consumer:
 		message = message.value
-		print(message)
+		# print(message)
 		user_id = message['uid']
 		user_list = {}
 		query = user_table.find()
 		user_list = []
 		for x in query:
-			print("[query : ]", x["user_id"])
+			# print("[query : ]", x["user_id"])
 			user_list.append(x["user_id"])
-		print(user_list)
+		# print(user_list)
 		res = {
 			"ack":'2',
 			"users":user_list

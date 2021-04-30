@@ -27,10 +27,10 @@ def user_handle(user_id):
 	print("[", user_id,"]: ", "started")
 	for msg in consumer:
 		if user_id in user_threads:
-			print("[", user_id,"]: ","entered")
+			# print("[", user_id,"]: ","entered")
 			recv_dict = msg.value
-			print("[", user_id,"]: ", recv_dict)
-			print("[", user_id,"]: ", recv_dict['ack'])
+			# print("[", user_id,"]: ", recv_dict)
+			# print("[", user_id,"]: ", recv_dict['ack'])
 
 			if(recv_dict['ack'] == '2'): # fetch users
 				users_data[user_id]['user_list'] = recv_dict['users']
@@ -88,7 +88,7 @@ def user_handle(user_id):
 				uid2 = recv_dict['uid2']
 				if uid2 not in users_data[user_id]['msg_list']:
 					users_data[user_id]['msg_list'][uid2] = {}
-				print("fetch_msg : ", recv_dict)
+				# print("fetch_msg : ", recv_dict)
 				for msg in msgs:
 					msg_id = str(msg['msgid'])
 					users_data[user_id]['msg_list'][uid2][msg_id] = {}
@@ -131,14 +131,14 @@ def login_check():
 		req=dict(req)
 		# session['uid'] = req['uid']
 		uid = str(req['uid'])
-		print(req)
+		# print(req)
 		n = len(req)
-		print(n)
+		# print(n)
 		
 		topic = "login"
 		topic_ack = "login_ack"
 		
-		print(topic)
+		# print(topic)
 		consumer = KafkaConsumer(topic_ack,
 	     bootstrap_servers=['localhost:9092'],
 	     auto_offset_reset='latest',
@@ -146,11 +146,11 @@ def login_check():
 	     group_id=None,
 	     enable_auto_commit=True,
 	     value_deserializer=lambda x: loads(x.decode('utf-8')))
-		print(topic_ack)
+		# print(topic_ack)
 		producer.send(topic, json.dumps(req).encode('utf-8'))
 		for message in consumer:
 			message = message.value
-			print(message)
+			# print(message)
 			break
 		if(message['ack']==1):
 			users += 1 
@@ -179,14 +179,14 @@ def register_check():
 		req=dict(req)
 		# session['uid'] = req['uid']
 		uid = str(req['uid'])
-		print(req)
+		# print(req)
 		n = len(req)
-		print(n)
+		# print(n)
 		
 		topic = "register"
 		topic_ack = "register_ack"
 
-		print(topic)
+		# print(topic)
 		consumer = KafkaConsumer(topic_ack,
 	     bootstrap_servers=['localhost:9092'],
 	     auto_offset_reset='latest',
@@ -194,11 +194,11 @@ def register_check():
 	     group_id=None,
 	     enable_auto_commit=True,
 	     value_deserializer=lambda x: loads(x.decode('utf-8')))
-		print(topic_ack)
+		# print(topic_ack)
 		producer.send(topic, json.dumps(req).encode('utf-8'))
 		for message in consumer:
 			message = message.value
-			print(message)
+			# print(message)
 			break
 
 		users += 1 
@@ -263,11 +263,11 @@ def fetch_groups(user_id):
 	file = open('group.txt', 'r')
 	data = file.read().splitlines()
 	file.close()
-	print(data)
+	# print(data)
 	data2 = []
 	for i in data:
 		data2.append(i.split('-')[0])
-	print(data2)
+	# print(data2)
 	users_data[user_id]['group_list'] = data2
 	sleep(1)
 	return (redirect("/dashboard/" + str(user_id)))
@@ -275,7 +275,7 @@ def fetch_groups(user_id):
 @app.route("/fetch_msg/<string:user_id>", methods=['POST'])
 def fetch_msg(user_id):
 	global producer, users, users_data
-	print('fetch msg')
+	# print('fetch msg')
 	chat_id = users_data[user_id]['cid']
 	print("[fetch msg] : ", user_id, chat_id)
 
@@ -315,7 +315,7 @@ def send(user_id):
 	if request.method=="POST":
 		req=request.form
 		req=dict(req)
-		print("[send] : ", req)
+		# print("[send] : ", req)
 		file_name = ""
 		topic1 = "loadbalancer"
 		dict_send = {}
@@ -338,7 +338,7 @@ def update_msg(user_id):
 	if request.method=="POST":
 		req=request.form
 		req=dict(req)
-		print("[update_msg] : ", req)
+		# print("[update_msg] : ", req)
 		msg_id = req['msg_id']
 		# users_data[user_id]['msg_list'][uid2][msg_id]['text'] = req['updated_msg']
 		topic1 = "loadbalancer"
@@ -362,7 +362,7 @@ def delete_msg(user_id):
 	if request.method=="POST":
 		req=request.form
 		req=dict(req)
-		print("[delete_msg] : ", req)
+		# print("[delete_msg] : ", req)
 		msg_id = req['msg_id']
 		# users_data[user_id]['msg_list'][uid2].pop()
 		topic1 = "loadbalancer"
