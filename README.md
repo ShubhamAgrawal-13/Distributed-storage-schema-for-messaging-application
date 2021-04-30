@@ -63,7 +63,3 @@ topic: user1
 	uid2 = user1
 }
 
-
-
-
-

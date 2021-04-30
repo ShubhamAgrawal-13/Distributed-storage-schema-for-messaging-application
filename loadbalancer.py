@@ -16,6 +16,10 @@ chance = 0
 msgid = 1
 servercount = 1
 
+file = open('msgid.txt', 'r')
+msgid = int(file.read()) + 1
+file.close()
+
 def select_server(msgid):
     global servercount
     return msgid%servercount
@@ -39,7 +43,7 @@ def fun_send(message,dict_serverid):
     print("server# : ",cur_server)
     recv_str = '_'.join(receiver_list)
     print("recv_str ",recv_str)
-
+    print(recv_dict)
     timestamp=str(datetime.datetime.now())
     format_of_msg_server = str(msgid)+"_"+message +"_"+timestamp +"_/_"+recv_str
 
@@ -48,25 +52,67 @@ def fun_send(message,dict_serverid):
     dict_ack['uid1'] = recv_dict[1]
     dict_ack['uid2'] = recv_dict[2]
     dict_ack['timestamp'] = timestamp
-    dict_ack['msgid'] = msgid
-    dict_ack['text'] = message
+    dict_ack['msgid'] = str(msgid)
+    dict_ack['text'] = message.split("_")[-1]
 
     producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
     producer.send(recv_dict[1], value=dict_ack)    
     msgid += 1
+    file = open('msgid.txt', 'w')
+    file.write(str(msgid))
+    file.close() 
+
+def fun_send_group(message,dict_serverid):
+    global msgid,producer
+    recv_dict = message.split("_")
+    receiver_list = check_typeof_receiver(message)
+    cur_server = select_server(msgid)
+    print("server# : ",cur_server)
+    recv_str = '_'.join(receiver_list)
+    print("recv_str ",recv_str)
+    print(recv_dict)
+    timestamp=str(datetime.datetime.now())
+    format_of_msg_server = str(msgid)+"_"+message +"_"+timestamp + "_/_"+recv_str
+
+    dict_ack = {}
+    dict_ack['ack'] = '1'
+    dict_ack['uid1'] = recv_dict[1]
+    dict_ack['uid2'] = recv_dict[2]
+    dict_ack['timestamp'] = timestamp
+    dict_ack['msgid'] = str(msgid)
+    dict_ack['text'] = message.split("_")[-1]
+
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
+    producer.send(recv_dict[1], value=dict_ack)    
+    msgid += 1
+    file = open('msgid.txt', 'w')
+    file.write(str(msgid))
+    file.close() 
 
 def fun_delete(message,dict_serverid):
     global msgid,producer
     cur_server = select_server(msgid)
 
+    dict_ack = {}
+    dict_ack['ack'] = '6'
+    dict_ack['uid1'] = message[2]
+    dict_ack['uid2'] = message[3]
+    dict_ack['msgid'] = str(message[4])
+    
     format_of_msg_server = str(message[-1])+"_"+message[0]+"_"+message[2]+"_"+message[3]+"_"+message[1]
-    producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server)
+
+    producer.send(message[2], value=dict_ack)
+    dict_ack['ack'] = '7'
+    producer.send(message[3], value=dict_ack)  
+  
 
 def fun_fetch_msg(message,dict_serverid):
     global msgid,producer
     cur_server = select_server(msgid)
     print(message)
     format_of_msg_server = str(message[1])+"_"+message[0]+"_"+message[2]+"_"+message[3]
+    print(format_of_msg_server)
     producer.send(dict_serverid[cur_server], value=format_of_msg_server)    
 
 def fun_update(message,dict_serverid):
@@ -74,8 +120,19 @@ def fun_update(message,dict_serverid):
     cur_server = select_server(msgid)
     timestamp=str(datetime.datetime.now())
     format_of_msg_server = (message[1])+"_"+message[0]+"_"+message[2]+"_"+message[3]+"_"+str(message[4])+"_"+message[5]+"_"+timestamp
+    print(format_of_msg_server)
+    dict_ack = {}
+    dict_ack['ack'] = '4'
+    dict_ack['uid1'] = message[2]
+    dict_ack['uid2'] = message[3]
+    dict_ack['timestamp'] = timestamp
+    dict_ack['msgid'] = str(message[4])
+    dict_ack['text'] = message[5]
     producer.send(dict_serverid[cur_server], value=format_of_msg_server)  
-
+    format_of_msg_server2 = str(message[4])+"_"+"send2_"+message[2]+"_"+message[3]+"_"+message[5] +"_"+timestamp +"_/_"+message[3]
+    print(format_of_msg_server2)
+    producer.send(dict_serverid[cur_server], value=format_of_msg_server2)  
+    producer.send(message[2], value=dict_ack)
 
 def consumer_t(topic):
     
@@ -99,13 +156,21 @@ def consumer_t(topic):
             print(message)
             fun_send(message,dict_serverid)
 
+        elif(recv_dict['op_type']=='send3'):
+            # recv_dict.pop('op_type')
+            message='_'.join(recv_dict.values())
+            print(message)
+            fun_send_group(message,dict_serverid)
+
         elif(recv_dict['op_type']=='fetchmsg'):
             message=list(recv_dict.values())
+            print('fetch msg: ',message)
             fun_fetch_msg(message,dict_serverid)
             print()
 
         elif(recv_dict['op_type']=='delete'):
             message=list(recv_dict.values())
+            print('delete: ',message)
             fun_delete(message,dict_serverid)
             print()
 
@@ -113,6 +178,7 @@ def consumer_t(topic):
             message=list(recv_dict.values())
             print('update: ',message)
             fun_update(message,dict_serverid)
+            print()
             
         elif(recv_dict['op_type']=='fetch_grp'):
             # recv_dict.pop('op_type')

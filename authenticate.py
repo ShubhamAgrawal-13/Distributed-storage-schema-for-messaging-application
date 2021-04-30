@@ -112,6 +112,8 @@ def fetch_users():
 		producer.send(user_id, json.dumps(res).encode('utf-8'))
 		producer.flush()
 
+
+
 def main():
 	t1 = threading.Thread(target=login_authenticate)
 	t2 = threading.Thread(target=register_user)

@@ -32,11 +32,11 @@ def user_handle(user_id):
 			print("[", user_id,"]: ", recv_dict)
 			print("[", user_id,"]: ", recv_dict['ack'])
 
-			if(recv_dict['ack'] == '2'):
+			if(recv_dict['ack'] == '2'): # fetch users
 				users_data[user_id]['user_list'] = recv_dict['users']
-			elif(recv_dict['ack'] == '3'):
+			elif(recv_dict['ack'] == '3'): # fetch groups
 				pass
-			elif(recv_dict['ack'] == '1'):
+			elif(recv_dict['ack'] == '1'): # send same user
 				msg_id = recv_dict['msgid']
 				uid1 = recv_dict['uid1']
 				uid2 = recv_dict['uid2']
@@ -46,7 +46,7 @@ def user_handle(user_id):
 				users_data[user_id]['msg_list'][uid2][msg_id]['uid'] = uid1
 				users_data[user_id]['msg_list'][uid2][msg_id]['time_stamp'] = recv_dict['timestamp']
 				users_data[user_id]['msg_list'][uid2][msg_id]['text'] = recv_dict['text']
-			elif (recv_dict['ack'] == '2'):
+			elif (recv_dict['ack'] == '0'): # send different user
 				msg_id = recv_dict['msgid']
 				uid1 = recv_dict['uid1']
 				uid2 = recv_dict['uid2']
@@ -56,6 +56,56 @@ def user_handle(user_id):
 				users_data[user_id]['msg_list'][uid1][msg_id]['uid'] = uid1
 				users_data[user_id]['msg_list'][uid1][msg_id]['time_stamp'] = recv_dict['timestamp']
 				users_data[user_id]['msg_list'][uid1][msg_id]['text'] = recv_dict['text']
+
+			elif (recv_dict['ack'] == '4'): # update same user
+				# print(users_data)
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				timestamp = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid2][msg_id]['text'] = recv_dict['text']
+				users_data[user_id]['msg_list'][uid2][msg_id]['time_stamp'] = recv_dict['timestamp']
+
+			elif (recv_dict['ack'] == '5'): # update different user
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				timestamp = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid1][msg_id]['time_stamp'] = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid1][msg_id]['text'] = recv_dict['text']
+			elif (recv_dict['ack'] == '6'): # delete same user
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				users_data[user_id]['msg_list'][uid2].pop(msg_id)
+			elif (recv_dict['ack'] == '7'): # delete different user
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				users_data[user_id]['msg_list'][uid1].pop(msg_id)
+			elif (recv_dict['ack'] == '8'): # fetch msgs same user
+				msgs = recv_dict['msgs']
+				uid2 = recv_dict['uid2']
+				if uid2 not in users_data[user_id]['msg_list']:
+					users_data[user_id]['msg_list'][uid2] = {}
+				print("fetch_msg : ", recv_dict)
+				for msg in msgs:
+					msg_id = str(msg['msgid'])
+					users_data[user_id]['msg_list'][uid2][msg_id] = {}
+					users_data[user_id]['msg_list'][uid2][msg_id]['uid'] = msg['uid2']
+					users_data[user_id]['msg_list'][uid2][msg_id]['time_stamp'] = msg['timestamp']
+					users_data[user_id]['msg_list'][uid2][msg_id]['text'] = msg['text']
+			elif (recv_dict['ack'] == '9'): # group
+				msg_id = recv_dict['msgid']
+				uid1 = recv_dict['uid1']
+				uid2 = recv_dict['uid2']
+				if uid1 not in users_data[user_id]['msg_list']:
+					users_data[user_id]['msg_list'][uid1] = {}
+				users_data[user_id]['msg_list'][uid1][msg_id] = {}
+				users_data[user_id]['msg_list'][uid1][msg_id]['uid'] = uid2
+				users_data[user_id]['msg_list'][uid1][msg_id]['time_stamp'] = recv_dict['timestamp']
+				users_data[user_id]['msg_list'][uid1][msg_id]['text'] = recv_dict['text']
+
 
 		else:
 			break
@@ -114,7 +164,7 @@ def login_check():
 			t1.start()
 			return (redirect("/dashboard/" + str(uid)))
 		else:
-			return (redirect("/invalid"))
+			return render_template("invalid.html")
 	return (redirect("/login"))
 
 @app.route("/register",methods=["GET","POST"])
@@ -171,7 +221,7 @@ def dashboard(user_id):
 	if user_id in users_data:
 		cid = users_data[user_id]['cid']
 		if cid in users_data[user_id]['msg_list']:
-			data4 = dict(sorted(users_data[user_id]['msg_list'][cid].items(), key = lambda kv:(kv[1]['time_stamp'], kv[0])))
+			data4 = dict(sorted(users_data[user_id]['msg_list'][cid].items(), key = lambda kv:(int(kv[0]), kv[1]['time_stamp'])))
 			return render_template("dashboard.html", uid=user_id, users=users_data[user_id]['user_list'], groups=users_data[user_id]['group_list'], msgs=data4, cid=users_data[user_id]['cid']) 
 		else:
 			return render_template("dashboard.html", uid=user_id, users=users_data[user_id]['user_list'], groups=users_data[user_id]['group_list'], msgs={}, cid=users_data[user_id]['cid']) 
@@ -206,16 +256,42 @@ def fetch_users(user_id):
 	return (redirect("/dashboard/" + str(user_id)))
 
 
-
 @app.route("/fetch_groups/<string:user_id>", methods=['POST'])
 def fetch_groups(user_id):
 	global producer, users, users_data
 	print('fetch groups')
-	file = open('mappings/group.txt', 'r')
+	file = open('group.txt', 'r')
 	data = file.read().splitlines()
 	file.close()
-	# print(data)
-	users_data[user_id]['group_list'] = data
+	print(data)
+	data2 = []
+	for i in data:
+		data2.append(i.split('-')[0])
+	print(data2)
+	users_data[user_id]['group_list'] = data2
+	sleep(1)
+	return (redirect("/dashboard/" + str(user_id)))
+
+@app.route("/fetch_msg/<string:user_id>", methods=['POST'])
+def fetch_msg(user_id):
+	global producer, users, users_data
+	print('fetch msg')
+	chat_id = users_data[user_id]['cid']
+	print("[fetch msg] : ", user_id, chat_id)
+
+	dict_send = {
+		"op_type":"fetchmsg",
+		"isGroup":"false",
+		"uid1":user_id,
+		"uid2":chat_id,
+	}
+
+	if(chat_id.startswith("group")):
+		dict_send["isGroup"] = "true"
+
+	topic1 = "loadbalancer"
+	producer.send(topic1, json.dumps(dict_send).encode('utf-8'))
+	sleep(1)
 	return (redirect("/dashboard/" + str(user_id)))
 
 
@@ -232,7 +308,7 @@ def update_cid(user_id, chat_id):
 
 @app.route("/send/<string:user_id>", methods=['GET', 'POST'])
 def send(user_id):
-	global producer, users, users_data, msg_count
+	global producer, users, users_data
 	#print(users_data)
 	chat_id = users_data[user_id]['cid']
 	print("[send] : ", user_id, chat_id)
@@ -242,12 +318,63 @@ def send(user_id):
 		print("[send] : ", req)
 		file_name = ""
 		topic1 = "loadbalancer"
-		dict_send={'op_type':"send",'uid1':user_id,'uid2':chat_id,'msg':req['typed_msg']}
+		dict_send = {}
+		if(chat_id.startswith("group")):
+			dict_send={'op_type':"send3",'uid1':user_id,'uid2':chat_id,'msg':req['typed_msg']}
+		else:
+			dict_send={'op_type':"send",'uid1':user_id,'uid2':chat_id,'msg':req['typed_msg']}
 		producer.send(topic1, json.dumps(dict_send).encode('utf-8'))
 		sleep(0.5)
 
 	return (redirect("/dashboard/" + str(user_id)))
 
+@app.route("/update_msg/<string:user_id>", methods=['GET', 'POST'])
+def update_msg(user_id):
+	global producer, users, users_data
+	#print(users_data)
+	chat_id = users_data[user_id]['cid']
+
+	print("[update_msg] : ", user_id, chat_id)
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print("[update_msg] : ", req)
+		msg_id = req['msg_id']
+		# users_data[user_id]['msg_list'][uid2][msg_id]['text'] = req['updated_msg']
+		topic1 = "loadbalancer"
+		dict_send = {}
+		if(chat_id.startswith("group")):
+			dict_send={'op_type':"update", 'isGroup':'true' ,'uid1':user_id,'uid2':chat_id, 'msgid':msg_id,'msg':req['updated_msg']}
+		else:
+			dict_send={'op_type':"update", 'isGroup':'false' ,'uid1':user_id,'uid2':chat_id, 'msgid':msg_id,'msg':req['updated_msg']}
+		producer.send(topic1, json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
+
+	return (redirect("/dashboard/" + str(user_id)))
+
+@app.route("/delete_msg/<string:user_id>", methods=['GET', 'POST'])
+def delete_msg(user_id):
+	global producer, users, users_data
+	#print(users_data)
+	chat_id = users_data[user_id]['cid']
+
+	print("[delete_msg] : ", user_id, chat_id)
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print("[delete_msg] : ", req)
+		msg_id = req['msg_id']
+		# users_data[user_id]['msg_list'][uid2].pop()
+		topic1 = "loadbalancer"
+		dict_send = {}
+		if(chat_id.startswith("group")):
+			dict_send={'op_type':"delete", 'isGroup':'true', 'uid1':user_id, 'uid2':chat_id, 'msgid':msg_id}
+		else:
+			dict_send={'op_type':"delete", 'isGroup':'false', 'uid1':user_id, 'uid2':chat_id, 'msgid':msg_id}
+		producer.send(topic1, json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
+
+	return (redirect("/dashboard/" + str(user_id)))
 
 
 
