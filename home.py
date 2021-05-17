@@ -35,7 +35,8 @@ def user_handle(user_id):
 			if(recv_dict['ack'] == '2'): # fetch users
 				users_data[user_id]['user_list'] = recv_dict['users']
 			elif(recv_dict['ack'] == '3'): # fetch groups
-				pass
+				print("[recv fetch grps]")
+				users_data[user_id]['group_list'] = recv_dict['grp_ids']
 			elif(recv_dict['ack'] == '1'): # send same user
 				msg_id = recv_dict['msgid']
 				uid1 = recv_dict['uid1']
@@ -164,7 +165,7 @@ def login_check():
 			t1.start()
 			return (redirect("/dashboard/" + str(uid)))
 		else:
-			return render_template("invalid.html")
+			return render_template("invalid.html", message='Invalid Credentials')
 	return (redirect("/login"))
 
 @app.route("/register",methods=["GET","POST"])
@@ -196,28 +197,32 @@ def register_check():
 	     value_deserializer=lambda x: loads(x.decode('utf-8')))
 		# print(topic_ack)
 		producer.send(topic, json.dumps(req).encode('utf-8'))
+		ack = 0
 		for message in consumer:
 			message = message.value
 			# print(message)
+			ack = message['ack']
 			break
 
-		users += 1 
-		users_data[uid] = {}
-		users_data[uid]['cid']=None
-		users_data[uid]['user_list']=[]
-		users_data[uid]['group_list']=[]
-		users_data[uid]['msg_list']={}
-		t1 = threading.Thread(target=user_handle, args=(uid,))
-		user_threads[uid]=True
-		t1.start()
-		return (redirect("/dashboard/" + str(uid)))
+		if(ack=='1'):
+			users += 1 
+			users_data[uid] = {}
+			users_data[uid]['cid']=None
+			users_data[uid]['user_list']=[]
+			users_data[uid]['group_list']=[]
+			users_data[uid]['msg_list']={}
+			t1 = threading.Thread(target=user_handle, args=(uid,))
+			user_threads[uid]=True
+			t1.start()
+			return (redirect("/dashboard/" + str(uid)))
+		else:
+			return render_template("invalid.html", message='Already registered')
 	return (redirect("/register"))
 
 
 @app.route("/dashboard/<string:user_id>",methods=["GET","POST"])
 def dashboard(user_id):
 	global producer, users, users_data
-	
 	if user_id in users_data:
 		cid = users_data[user_id]['cid']
 		if cid in users_data[user_id]['msg_list']:
@@ -236,6 +241,84 @@ def logout(user_id):
 	user_threads.pop(user_id)
 	producer.send(user_id, json.dumps({}).encode('utf-8'))
 	return (redirect("/"))
+
+@app.route("/create_grp/<string:user_id>", methods=['POST'])
+def create_grp(user_id):
+	global producer, users, users_data
+	print('create grp')
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print(req)
+		dict_send = {
+			"uid":user_id,
+			"grp_id":req['grp_id']
+		}
+		producer.send("create_grp", json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
+	return (redirect("/dashboard/" + str(user_id)))
+
+@app.route("/join_grp/<string:user_id>", methods=['POST'])
+def join_grp(user_id):
+	global producer, users, users_data
+	print('join grp')
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print(req)
+		dict_send = {
+			"uid":user_id,
+			"grp_id":req['grp_id']
+		}
+		producer.send("join_grp", json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
+	return (redirect("/dashboard/" + str(user_id)))
+
+@app.route("/leave_grp/<string:user_id>", methods=['POST'])
+def leave_grp(user_id):
+	global producer, users, users_data
+	print('leave grp')
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print(req)
+		dict_send = {
+			"uid":user_id,
+			"grp_id":req['grp_id']
+		}
+		producer.send("leave_grp", json.dumps(dict_send).encode('utf-8'))
+		sleep(0.5)
+	return (redirect("/dashboard/" + str(user_id)))
+
+@app.route("/show_grp/<string:user_id>", methods=['POST'])
+def show_grp(user_id):
+	global producer, users, users_data
+	print('show grp')
+	if request.method=="POST":
+		req=request.form
+		req=dict(req)
+		print(req)
+		dict_send = {
+			"uid":user_id,
+			"grp_id":req['grp_id']
+		}
+		consumer = KafkaConsumer("show_grp_ack",
+	     bootstrap_servers=['localhost:9092'],
+	     auto_offset_reset='latest',
+	     # auto_offset_reset='earliest',
+	     group_id=None,
+	     enable_auto_commit=True,
+	     value_deserializer=lambda x: loads(x.decode('utf-8')))
+		producer.send("show_grp", json.dumps(dict_send).encode('utf-8'))
+		dict_ack = {}
+		for message in consumer:
+			dict_ack = message.value
+			break
+		sleep(0.5)
+		dict_ack['count'] = len(dict_ack['members'])
+		return render_template("show_group_members.html", message=dict_ack)
+		
+	return (redirect("/dashboard/" + str(user_id)))
 
 
 @app.route("/fetch_users/<string:user_id>", methods=['POST'])
@@ -260,15 +343,19 @@ def fetch_users(user_id):
 def fetch_groups(user_id):
 	global producer, users, users_data
 	print('fetch groups')
-	file = open('group.txt', 'r')
-	data = file.read().splitlines()
-	file.close()
-	# print(data)
-	data2 = []
-	for i in data:
-		data2.append(i.split('-')[0])
+	# file = open('group.txt', 'r')
+	# data = file.read().splitlines()
+	# file.close()
+	# # print(data)
+	# data2 = []
+	# for i in data:
+	# 	data2.append(i.split('-')[0])
 	# print(data2)
-	users_data[user_id]['group_list'] = data2
+	dict_send = {
+		"uid":user_id
+	}
+	# users_data[user_id]['group_list'] = data2
+	producer.send("fetch_groups", json.dumps(dict_send).encode('utf-8'))
 	sleep(1)
 	return (redirect("/dashboard/" + str(user_id)))
 

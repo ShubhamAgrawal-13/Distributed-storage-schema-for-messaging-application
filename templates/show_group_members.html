@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{uid}} Dashboard</title>
+	<!-- <meta http-equiv="refresh" content="30" /> -->
+	<style type="text/css">
+		body, html {
+		  width: 100%;
+		  height: 100%;
+		  margin: 0;
+		  background-image: url('/static/bg_img4.jpg');
+		  background-repeat: no-repeat;
+		  background-size: cover;
+		}
+
+		.container {
+		  width: 100%;
+		  height: 100%;
+		}
+
+		.left_pane {
+		    width: 35%;
+		    height: 80%;
+		    float: left;
+		    /*background-color: #64d09b;*/
+		    border-collapse: collapse;
+		}
+
+		.right_top_pane {
+		  width: 65%;
+		  height: 50%;
+		  position: relative;
+		  float: right;
+		  /*background-color: #b6f9d8;*/
+		  /*background-color: #dfff00;*/
+		  border-collapse: collapse;
+		}
+
+		.right_bottom_pane {
+		  width: 65%;
+		  height: 10%;
+		  position: relative;
+		  float: right;
+		  /*background-color: royalblue;*/
+		  /*background-color: #38b369;*/
+		  border-collapse: collapse;
+		}
+
+		.right_bottom_pane1 {
+		  width: 65%;
+		  height: 10%;
+		  position: relative;
+		  float: right;
+		  /*background-color: royalblue;*/
+		  /*background-color: #38b369;*/
+		  border-collapse: collapse;
+		}
+
+		.right_bottom_pane2 {
+		  width: 65%;
+		  height: 10%;
+		  position: relative;
+		  float: right;
+		  /*background-color: royalblue;*/
+		  /*background-color: #38b369;*/
+		  border-collapse: collapse;
+		}
+
+		.toppane {
+		  width: 100%;
+		  height: 10%;
+		  border-collapse: collapse;
+		  /*background-color: lightgreen;*/
+		}
+
+		.bottompane {
+		  width: 100%;
+		  height: 10%;
+		  float: left;
+		  border-collapse: collapse;
+		  /*background-color: #4da6ff;*/
+		  /*background-color: #b8c2ab;*/
+		}
+
+		.logout {
+		  width: 30%;
+		  font-size: 25px;
+		  border-radius: 12px;
+		  margin-left: 10px;
+		  /*background-color: #fff;*/
+		}
+
+		.logout:hover {
+			background-color: #888;
+		}
+
+		.btn {
+		  /*width: 30%;*/
+		  font-size: 20px;
+		  border-radius: 12px;
+		  margin-left: 10px;
+		  /*background-color: #fff;*/
+		}
+
+		.btn:hover {
+			background-color: #888;
+		}
+
+		input[type=text], input[type=password] {   
+		  width: 100%;   
+		  margin: 8px 0;  
+		  padding: 12px 20px;   
+		  display: inline-block;   
+		  border: 2px solid green;   
+		  box-sizing: border-box;   
+		} 
+
+		.vertical-menu {
+		  width: 200px;
+		  height: 150px;
+		  overflow-y: auto;
+		}
+
+		.vertical-menu a {
+		  /*background-color: #eee;*/
+		  /*color: black;*/
+		  display: block;
+		  padding: 12px;
+		  text-decoration: none;
+		}
+
+		.vertical-menu a:hover {
+		  background-color: #ccc;
+		  color: black;
+		}
+
+		.vertical-menu a.active {
+		  background-color: #4CAF50;
+		  color: black;
+		}
+
+		.vertical-menu2 {
+		  width: 190px;
+		  height: 160px;
+		  overflow-y: auto;
+		  scroll-behavior: smooth;
+		}
+
+		.vertical-menu2 a {
+		  background-color: #eee;
+		  /*color: black;*/
+		  display: block;
+		  padding: 12px;
+		  text-decoration: none;
+		}
+
+		.vertical-menu2 a:hover {
+		  background-color: #ccc;
+		  color: black;
+		}
+
+		.vertical-menu2 a.active {
+		  background-color: #4CAF50;
+		  color: black;
+		}
+
+		/*h1, h2, h3, h4, h5, h6, b{
+			color:white;
+		}*/
+
+		a {color:#FFF;}         /* Unvisited link  */
+		a:visited {color:#FFF;} /* Visited link    */
+		a:hover {color:#FFF;}   /* Mouse over link */
+		a:active {color:#FFF;}  /* Selected link   */
+
+	</style>
+</head>
+<body>
+	<div class="container" style="font-size: 20px;color:white; background-color:black;opacity: 0.7;">
+
+	    <div>
+	    <table style="width:100%;">
+		<tr>
+		    <td>
+				
+				<table>
+					<tr>
+						<td colspan="2">
+							<label style="width:100%"> <h1>Group Members</h1> </label>
+							<label style="width:100%"> <font color='orange'>{{message['flag']}}</font> </label>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<h2><b><i><font color="lightgreen">{{message['grp_id']}}</font></i></b></h2>
+						</td>
+						<td style="text-align:center">
+		    				<form action="{{ url_for('dashboard', user_id = message['uid']) }}" method="POST">
+							    <button class="btn"> Dashboard </button>
+							</form>
+		    			</td>
+						<td>
+							<form action="{{ url_for('logout', user_id = message['uid']) }}" method="POST">
+								<button class="btn"> Logout </button>
+							</form>
+						</td>
+						<td>
+							
+						</td>
+						<td>
+	    					<label><h3>Count : {{message['count']}} </h3></label>
+	    				</td>
+					</tr>
+				</table>
+				
+				<table width="100%">
+					<tr>
+			    				<td width="60%">
+			    					<label><b>Group Member Name</b></label>
+			    				</td>
+			    	</tr>
+			    </table>
+					<!-- <a href="#">link</a> -->
+					<div class="vertical-menu2" id="chat-window" style="width:100%;">
+					<table border="1px" width="100%">
+				    {% for mem in message['members'] %}
+				    	<!-- <div> -->
+				    			<tr>
+				    				<td>
+				    					<label><i>{{mem}}</i></label>
+				    				</td>
+				    				
+				    				<!-- <td width="20%" style="text-align:center">
+				    					
+				    					<div id="myForm" hidden>
+										  <form action="{{ url_for('update_msg', user_id = uid, msg_id = msg) }}" method="POST">
+										    <label for="psw"><b>Update Message</b></label>
+										    <input type="text" name="updated_msg">
+										    <button type="submit" class="btn">Update</button>
+										  </form>
+										</div>
+
+										<button id="update" class="btn" onclick="btnUpdate()">Update</button>
+
+				    				</td>
+				    				<td width="20%" style="text-align:center">
+				    					<form action="{{ url_for('update_msg', user_id = uid, msg_id = msg) }}" method="POST">
+				    						<button class="btn">Delete</button>	
+				    					</form>
+				    				</td> -->
+				    			</tr>
+				    	<!-- </div> -->
+					{% endfor %}
+					</table>
+				</div>
+				<script>
+			        chatWindow = document.getElementById('chat-window'); 
+					var xH = chatWindow.scrollHeight; 
+					chatWindow.scrollTo(0, xH);
+			    </script>
+			    
+			</td>
+		</tr>
+		</table>
+		</div>
+	    <div class="bottompane">
+	    	<!-- <table border="1px" width="100%">
+	    		<tr>
+	    			<td> -->
+	    				<h3 style="margin-left: 20px;"> &#169; Made by Shubham, Shanu, Shobhit, Yash and Harshit</h3>
+	    			<!-- </td>
+	    		</tr>
+	    	</table> -->
+	    </div>
+</body>
+</html>

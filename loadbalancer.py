@@ -10,6 +10,12 @@ import datetime
 import time
 import collections
 import threading
+import pymongo
+
+
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+user_db = myclient["authentication"]
+group_table = user_db["group_info"]
 
 topic_num = 0
 chance = 0
@@ -26,11 +32,15 @@ def select_server(msgid):
 
 def check_typeof_receiver(message):
     recv = message.split("_")[2]
-    f = open('group.txt','r')
-    lines= f.readlines()
-    for line in lines:
-        if(line.split('-')[0] == recv):
-            return line.split('\n')[0].split('-')[1:]
+    query = user_table.find({"group_id": recv})
+    # f = open('group.txt','r')
+    # lines= f.readlines()
+    print("[group]: ", query)
+    
+    for x in query:
+        rl = x['members']
+        return rl.keys()
+
     r_list = []
     r_list.append(recv)
     return r_list

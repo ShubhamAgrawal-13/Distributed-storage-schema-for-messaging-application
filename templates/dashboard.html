@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Dashboard</title>
+	<title>{{uid}} Dashboard</title>
 	<!-- <meta http-equiv="refresh" content="30" /> -->
 	<style type="text/css">
 		body, html {
@@ -199,7 +199,7 @@
 	    				<form action="{{ url_for('fetch_users', user_id = uid) }}" method="POST">
 						    <button class="btn" style="width:50%;margin-top: 10px;">
 						    <div style="padding: 10px;">
-						    	<b>Fetch Users</b>
+						    	<b>Fetch Users &#x21bb; </b>
 							</div>
 						    </button>
 						</form>
@@ -211,13 +211,15 @@
 							{% endfor %}
 						</div>
 	    			</td>
+
 	    		</tr>
+	    		<tr><td><hr></td></tr>	
 	    		<tr>
 	    			<td style="text-align:center">
 	    				<form action="{{ url_for('fetch_groups', user_id = uid) }}" method="POST">
 						    <button class="btn" style="width:50%;margin-top: 10px;">
 						    <div style="padding: 10px;">
-						    	<b>Fetch Groups</b>
+						    	<b>Fetch Groups &#x21bb; </b>
 							</div>
 						    </button>
 						</form>
@@ -228,6 +230,23 @@
 								<!-- <a href="#">{{group}}</a> -->
 							{% endfor %}
 						</div>
+	    			</td>
+	    		</tr>
+	    		<!-- <tr><td><hr></td></tr>	 -->
+	    		<tr>
+	    			<td>
+	    				<form action="{{ url_for('show_grp', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="40%">
+					    				<input type="text" name="grp_id" id="grp_id" placeholder="Group_id"/>
+					    			</td>
+					    			<td style="text-align:center">
+										<button type="submit" class="btn">Show Grp Members</button>
+					    			</td>
+					    		</tr>
+					    	</table>
+						</form>
 	    			</td>
 	    		</tr>
 	    	</table>
@@ -250,7 +269,7 @@
 						<h2><b><i><font color="lightgreen">{{cid}}</font></i></b></h2>
 					</td>
 					<td>
-						<button class="btn" type="submit" onClick="window.location.reload();"> Refresh </button>
+						<button class="btn" type="submit" onClick="window.location.reload();"> Refresh &#x21bb; </button>
 					</td>
 					<td>
 						<form action="{{ url_for('fetch_msg', user_id = uid) }}" method="POST">
@@ -372,24 +391,41 @@
 	    	<table style="width:100%;">
 	    		<tr>
 	    			<td>
-	    	<form action="{{ url_for('update_msg', user_id = uid) }}" method="POST">
-	    		<table width="100%">
-		    		<tr>
-		    			<td width="20%">
-		    				<input type="text" name="msg_id" id="msg_id" placeholder="Type a msg id..."/>
-		    			</td>
-		    			<td width="50%">
-		    				<input type="text" name="updated_msg" id="updated_msg" placeholder="Type a message..."/>
-		    			</td>
-		    			<td width="20%" style="text-align:center">
-							<button type="submit" class="btn">Update</button>
-		    			</td>
-		    			<td width="10%">
-		    				
-		    			</td>
-		    		</tr>
-		    	</table>
-			</form>
+				    	<form action="{{ url_for('update_msg', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="20%">
+					    				<input type="text" name="msg_id" id="msg_id" placeholder="Msg_id"/>
+					    			</td>
+					    			<td>
+					    				<input type="text" name="updated_msg" id="updated_msg" placeholder="Type a new message..."/>
+					    			</td>
+					    			<td width="20%" style="text-align:center">
+										<button type="submit" class="btn">Update Msg</button>
+					    			</td>
+					    			<td>
+					    				
+					    			</td>
+					    		</tr>
+					    	</table>
+						</form>
+					</td>
+					<td>
+						<form action="{{ url_for('delete_msg', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="35%">
+					    				<input type="text" name="msg_id" id="msg_id" placeholder="Msg_id"/>
+					    			</td>
+					    			<td style="text-align:center">
+										<button type="submit" class="btn">Delete Msg</button>
+					    			</td>
+					    			<td width="30%">
+					    				
+					    			</td>
+					    		</tr>
+					    	</table>
+						</form>
 					</td>
 	    		</tr>
 	    	</table>
@@ -398,21 +434,50 @@
 	    	<table style="width:100%;">
 	    		<tr>
 	    			<td>
-	    	<form action="{{ url_for('delete_msg', user_id = uid) }}" method="POST">
-	    		<table width="100%">
-		    		<tr>
-		    			<td width="20%">
-		    				<input type="text" name="msg_id" id="msg_id" placeholder="Type a msg id..."/>
-		    			</td>
-		    			<td width="20%" style="text-align:center">
-							<button type="submit" class="btn">Delete</button>
-		    			</td>
-		    			<td width="60%">
-		    				
-		    			</td>
-		    		</tr>
-		    	</table>
-			</form>
+	    				<form action="{{ url_for('create_grp', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="40%">
+					    				<input type="text" name="grp_id" id="grp_id" placeholder="Group_id"/>
+					    			</td>
+					    			<td style="text-align:center">
+										<button type="submit" class="btn">Create Grp</button>
+					    			</td>
+					    			
+					    		</tr>
+					    	</table>
+						</form>
+	    			</td>
+	    			<td>
+	    				<form action="{{ url_for('join_grp', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="40%">
+					    				<input type="text" name="grp_id" id="grp_id" placeholder="Group_id"/>
+					    			</td>
+					    			<td style="text-align:center">
+										<button type="submit" class="btn">Join Grp</button>
+					    			</td>
+					    			
+					    		</tr>
+					    	</table>
+						</form>
+					</td>
+					
+					<td>
+	    				<form action="{{ url_for('leave_grp', user_id = uid) }}" method="POST">
+				    		<table width="100%">
+					    		<tr>
+					    			<td width="40%">
+					    				<input type="text" name="grp_id" id="grp_id" placeholder="Group_id"/>
+					    			</td>
+					    			<td style="text-align:center">
+										<button type="submit" class="btn">Leave Grp</button>
+					    			</td>
+					    			
+					    		</tr>
+					    	</table>
+						</form>
 					</td>
 	    		</tr>
 	    	</table>
